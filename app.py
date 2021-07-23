@@ -1,9 +1,19 @@
 import cv2
 import httpx
 from datetime import datetime
+import argparse
 import logging
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
+argparser = argparse.ArgumentParser(description="CARLA Manual Control Client")
+argparser.add_argument(
+    "--headless",
+    action="store_true",
+    dest="headless",
+    help="Runs face detector in headless mode",
+)
+args = argparser.parse_args()
+
 
 BASE_URL = "http://127.0.0.1:8000"
 HAS_CONNECTION = True
@@ -68,7 +78,9 @@ while True:
         for (ex, ey, ew, eh) in eyes:
             cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
 
-    cv2.imshow("img", img)
+    if not args.headless:
+        cv2.imshow("img", img)
+
     k = cv2.waitKey(30) & 0xFF
     if k == 27:
         break
