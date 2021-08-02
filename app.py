@@ -19,7 +19,7 @@ BASE_URL = "http://127.0.0.1:8000"
 HAS_CONNECTION = True
 
 try:
-    EXPERIMENT_ID = httpx.get(f"{BASE_URL}/experiments/last").json()["id"]
+    EXPERIMENT_ID = httpx.get(f"{BASE_URL}/experiments/last/").json()["id"]
     logging.info(f"Connected to {BASE_URL}")
 except httpx.ConnectError:
     logging.info("Couldn't connect to remote host, running in offline mode")
@@ -54,20 +54,25 @@ face_cascade = cv2.CascadeClassifier(
 eye_cascade = cv2.CascadeClassifier("./haarcascade_models/haarcascade_eye.xml")
 
 face_in_last_iteration = False
+skiped_frames = 0
 while True:
     # Capture frames
     _, img = cap.read()
+    skiped_frames += 1
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     faces = face_cascade.detectMultiScale(gray, 1.08, 7, minSize=(100, 100))
 
-    if len(faces) != 0 and not face_in_last_iteration:
-        post_event(detected=True)
-        face_in_last_iteration = True
-    elif len(faces) == 0 and face_in_last_iteration:
-        post_event(detected=False)
-        face_in_last_iteration = False
+    # Skiped some frames to reduce the amount of possible events sent
+    if skiped_frames == 4:
+        skiped_frames = 0
+        if len(faces) != 0 and not face_in_last_iteration:
+            post_event(detected=True)
+            face_in_last_iteration = True
+        elif len(faces) == 0 and face_in_last_iteration:
+            post_event(detected=False)
+            face_in_last_iteration = False
 
     for (x, y, w, h) in faces:
         cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
